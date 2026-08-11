@@ -69,7 +69,16 @@ df_top_generos = df[df[COL_CATEGORIA].isin(top_generos)]
 plt.figure(figsize=(12, 6))
 sns.set_theme(style="whitegrid")
 # Gráfico horizontal para legibilidad impecable
-sns.barplot(data=df_top_generos, x=COL_NUMERICA, y=COL_CATEGORIA, estimator=sum, errorbar=None, palette="viridis")
+sns.barplot(
+    data=df_top_generos, 
+    x=COL_NUMERICA, 
+    y=COL_CATEGORIA, 
+    hue=COL_CATEGORIA, 
+    legend=False, 
+    estimator=sum, 
+    errorbar=None, 
+    palette="viridis"
+)
 plt.title(f"Suma Total de {COL_NUMERICA} por Género Principal", fontsize=14, fontweight='bold')
 plt.xlabel("Total de Votos")
 plt.ylabel("Género")
@@ -147,32 +156,78 @@ plt.savefig('grafico_lineas.png', dpi=150)
 plt.close()
 
 
-# Ejercicio 12: .query() — Filtros escritos como texto
-resultado_original = df.loc[filtro_avanzado & condicion_extra]
+
+
+# Ejercicio 12: .query() — Filtros como texto
+resultado_original = df[filtro_avanzado & condicion_extra]
 resultado_query = df.query('genres.str.contains("Drama") and num_votes > @VALOR_NUMERICO_CORTE', engine='python')
 
-# Ejercicio 13: .isin() y ~ — Incluir y excluir categorías
+print("--- Ejercicio 12: .query() vs Corchetes ---")
+print("Resultado con corchetes:")
+print(resultado_original.head())
+print("\nResultado con .query():")
+print(resultado_query.head())
+
+son_iguales = resultado_original.equals(resultado_query)
+print(f"\n¿El resultado de .query() es idéntico al original?: {son_iguales}")
+print("-" * 50 + "\n")
+
+
+# Ejercicio 13: .isin() y ~ (Incluir y Excluir)
 generos_elegidos = ['Action', 'Comedy', 'Drama']
+
+# Incluir y excluir
 df_incluidos = df[df[COL_CATEGORIA].isin(generos_elegidos)]
 df_excluidos = df[~df[COL_CATEGORIA].isin(generos_elegidos)]
 
+print("--- Ejercicio 13: .isin() y ~ ---")
+print(f"Filas incluidas ({len(df_incluidos)}):")
+print(df_incluidos.head(2))
+print(f"\nFilas excluidas ({len(df_excluidos)}):")
+print(df_excluidos.head(2))
 
-# Ejercicio 14: .value_counts(), .unique() y .nunique()
-conteo_completo = df[COL_CATEGORIA].value_counts()
-unicos_completo = df[COL_CATEGORIA].unique()
-cant_unicos_completo = df[COL_CATEGORIA].nunique()
-porcentaje_completo = (df[COL_CATEGORIA].value_counts(normalize=True) * 100).round(1)
+# suma total
+total = len(df)
+suma = len(df_incluidos) + len(df_excluidos)
+print(f"\nTotal original: {total} | Incluidos + Excluidos: {suma}")
+print(f"¿Coinciden los totales?: {total == suma}")
+print("-" * 50 + "\n")
+
+
+# Ejercicio 14: Exploración (.value_counts, .unique, .nunique)
+print("--- Ejercicio 14: Exploración de Datos ---")
+print("=== DataFrame completo ===")
+print("Conteo por categoría:\n", df[COL_CATEGORIA].value_counts())
+print("\nValores únicos:\n", df[COL_CATEGORIA].unique())
+print("\nCantidad de categorías distintas:", df[COL_CATEGORIA].nunique())
+print("\nPorcentajes (%):\n", (df[COL_CATEGORIA].value_counts(normalize=True) * 100).round(1))
 
 df_filtrado_avanzado = df[filtro_avanzado]
-conteo_filtrado = df_filtrado_avanzado[COL_CATEGORIA].value_counts()
-cant_unicos_filtrado = df_filtrado_avanzado[COL_CATEGORIA].nunique()
+
+print("\n=== DataFrame filtrado (Drama) ===")
+print("Conteo por categoría:\n", df_filtrado_avanzado[COL_CATEGORIA].value_counts())
+print("\nValores únicos:\n", df_filtrado_avanzado[COL_CATEGORIA].unique())
+print("\nCantidad de categorías distintas:", df_filtrado_avanzado[COL_CATEGORIA].nunique())
+print("\nPorcentajes (%):\n", (df_filtrado_avanzado[COL_CATEGORIA].value_counts(normalize=True) * 100).round(1))
+print("-" * 50 + "\n")
 
 
-# Ejercicio 15: Exportar a CSV + Heatmap de correlación
+# Ejercicio 15: Exportación CSV y Heatmap de Correlación
+
+
+import numpy as np
+
+print("--- Ejercicio 15: Exportación y Correlación ---")
+
+# 1 Exportar a CSV
 df_filtrado_avanzado.to_csv('mi_resultado_filtrado.csv', index=False)
+print(f"Archivo exportado: 'mi_resultado_filtrado.csv' guardado exitosamente con {len(df_filtrado_avanzado)} filas.\n")
 
 correlacion = df.corr(numeric_only=True)
+print("Matriz de correlación:")
+print(correlacion.round(2))
 
+# 2 Heatmap
 plt.figure(figsize=(8, 6))
 sns.heatmap(
     correlacion,
@@ -187,7 +242,6 @@ plt.tight_layout()
 plt.savefig('heatmap_mi_dataset.png', dpi=150)
 plt.close()
 
-import numpy as np
 mask = np.triu(np.ones(correlacion.shape), k=0).astype(bool)
 correlacion_sin_diag = correlacion.where(~mask)
 
@@ -196,3 +250,7 @@ val_max = correlacion_sin_diag.stack().max()
 
 par_min = correlacion_sin_diag.stack().idxmin()
 val_min = correlacion_sin_diag.stack().min()
+
+print(f"\nPar más correlacionado: {par_max[0]} ↔ {par_max[1]} ({val_max:.2f})")
+print(f"Par menos correlacionado: {par_min[0]} ↔ {par_min[1]} ({val_min:.2f})")
+print("-" * 50 + "\n")
