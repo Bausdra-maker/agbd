@@ -62,7 +62,7 @@ else:
 print("-" * 50 + "\n")
 
 # Ejercicio 7: Gráfico de Barras Comparativo (Seaborn)
-# Tomamos los 8 géneros principales para un diseño súper limpio
+# Tomamos los 8 géneros principales para un diseño 
 top_generos = resumen_agrupado.nlargest(8).index
 df_top_generos = df[df[COL_CATEGORIA].isin(top_generos)]
 
@@ -108,3 +108,91 @@ print("--- Ejercicio 9: Resultado de .loc[] con Doble Condición ---")
 print(resultado.head())  # .head() para mostrar las primeras filas de forma elegante
 print(f"\nFilas totales que cumplen ambas condiciones: {len(resultado)}")
 print("-" * 50 + "\n")
+
+
+
+# Ejercicio 10: Detección y Manejo de Valores Nulos
+df_con_nulos = df.copy()
+df_con_nulos.loc[[0, 1, 2], COL_NUMERICA] = None
+
+df_sin_nulos = df_con_nulos.dropna()
+
+media_votos = df_con_nulos[COL_NUMERICA].mean()
+df_rellenado = df_con_nulos.fillna({COL_NUMERICA: round(media_votos, 2)})
+
+
+# Ejercicio 11: Gráfico de Líneas con Anotación del Máximo
+agrupado = df.groupby(COL_CATEGORIA)[COL_NUMERICA].sum().sort_values()
+
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.plot(agrupado.index, agrupado.values, marker='o', color='#2E75B6', linewidth=2, markersize=8)
+
+idx_max = agrupado.idxmax()
+val_max = agrupado.max()
+
+ax.annotate(
+    f'Máximo: {val_max:,.0f}',
+    xy=(idx_max, val_max),
+    xytext=(idx_max, val_max * 0.85),
+    arrowprops=dict(arrowstyle='->', color='red', lw=1.5),
+    fontsize=11, color='red', fontweight='bold', ha='center'
+)
+
+ax.set_title('Evolución de Votos Totales por Género Principal', fontsize=14, fontweight='bold')
+ax.set_xlabel('Género Principal')
+ax.set_ylabel('Suma de Votos')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.savefig('grafico_lineas.png', dpi=150)
+plt.close()
+
+
+# Ejercicio 12: .query() — Filtros escritos como texto
+resultado_original = df.loc[filtro_avanzado & condicion_extra]
+resultado_query = df.query('genres.str.contains("Drama") and num_votes > @VALOR_NUMERICO_CORTE', engine='python')
+
+# Ejercicio 13: .isin() y ~ — Incluir y excluir categorías
+generos_elegidos = ['Action', 'Comedy', 'Drama']
+df_incluidos = df[df[COL_CATEGORIA].isin(generos_elegidos)]
+df_excluidos = df[~df[COL_CATEGORIA].isin(generos_elegidos)]
+
+
+# Ejercicio 14: .value_counts(), .unique() y .nunique()
+conteo_completo = df[COL_CATEGORIA].value_counts()
+unicos_completo = df[COL_CATEGORIA].unique()
+cant_unicos_completo = df[COL_CATEGORIA].nunique()
+porcentaje_completo = (df[COL_CATEGORIA].value_counts(normalize=True) * 100).round(1)
+
+df_filtrado_avanzado = df[filtro_avanzado]
+conteo_filtrado = df_filtrado_avanzado[COL_CATEGORIA].value_counts()
+cant_unicos_filtrado = df_filtrado_avanzado[COL_CATEGORIA].nunique()
+
+
+# Ejercicio 15: Exportar a CSV + Heatmap de correlación
+df_filtrado_avanzado.to_csv('mi_resultado_filtrado.csv', index=False)
+
+correlacion = df.corr(numeric_only=True)
+
+plt.figure(figsize=(8, 6))
+sns.heatmap(
+    correlacion,
+    annot=True,
+    fmt='.2f',
+    cmap='plasma',
+    linewidths=0.5,
+    vmin=-1, vmax=1
+)
+plt.title('Correlación entre variables numéricas — Películas IMDb', fontweight='bold')
+plt.tight_layout()
+plt.savefig('heatmap_mi_dataset.png', dpi=150)
+plt.close()
+
+import numpy as np
+mask = np.triu(np.ones(correlacion.shape), k=0).astype(bool)
+correlacion_sin_diag = correlacion.where(~mask)
+
+par_max = correlacion_sin_diag.stack().idxmax()
+val_max = correlacion_sin_diag.stack().max()
+
+par_min = correlacion_sin_diag.stack().idxmin()
+val_min = correlacion_sin_diag.stack().min()
